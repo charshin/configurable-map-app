@@ -1,0 +1,27 @@
+{
+  "name": "@confmap/shared",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Configuration schema, API DTO types and error shape shared by the web app and the API.",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsc -p tsconfig.build.json --watch --preserveWatchOutput",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.2"
+  }
+}
