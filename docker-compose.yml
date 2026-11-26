@@ -1,5 +1,10 @@
 # Local Postgres for the API. Start with `pnpm db:up`.
 # Host port defaults to 5433 so it doesn't clash with a locally installed Postgres on 5432.
+
+# Fixed project name, so the container and volume names don't depend on the
+# folder the repo is cloned into.
+name: configurable-map-app
+
 services:
   db:
     image: postgres:17-alpine

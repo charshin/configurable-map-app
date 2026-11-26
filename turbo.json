@@ -100,6 +100,26 @@
       "env": [
         "DATABASE_URL"
       ]
+    },
+    "api#db:deploy": {
+      "dependsOn": [
+        "db:generate"
+      ],
+      "cache": false,
+      "env": [
+        "DATABASE_URL"
+      ]
+    },
+    "api#db:seed": {
+      "dependsOn": [
+        "^build",
+        "db:generate",
+        "db:deploy"
+      ],
+      "cache": false,
+      "env": [
+        "DATABASE_URL"
+      ]
     }
   }
 }

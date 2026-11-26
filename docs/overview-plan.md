@@ -65,7 +65,7 @@ apps/web/                             # Next.js (the existing scaffold moves her
   src/components/map/*                   # ArcGIS map/table (next/dynamic ssr:false in a client file)
   src/components/workspace/*             # store, picker, editors, dialogs
 ```
-The existing `nextjs-conf-map` scaffold moves into `apps/web`.
+The existing Next.js scaffold (this repo, created as `nextjs-conf-map` and renamed to `configurable-map-app` on 27 Nov) moves into `apps/web`.
 
 ## Data model (Prisma, in apps/api)
 `Dataset`: one row is seeded, with no switcher in the UI.
