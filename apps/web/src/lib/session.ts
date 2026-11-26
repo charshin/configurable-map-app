@@ -17,3 +17,19 @@ export async function getUsername(): Promise<string | null> {
   const result = usernameSchema.safeParse(raw);
   return result.success ? result.data : null;
 }
+
+/** Signs the user in as `username`. Server Actions only. */
+export async function setUsernameCookie(username: string): Promise<void> {
+  (await cookies()).set(USERNAME_COOKIE, username, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+    maxAge: 60 * 60 * 24 * 365,
+  });
+}
+
+/** Signs the user out. Server Actions only. */
+export async function clearUsernameCookie(): Promise<void> {
+  (await cookies()).delete(USERNAME_COOKIE);
+}

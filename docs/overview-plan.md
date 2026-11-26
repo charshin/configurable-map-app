@@ -47,7 +47,7 @@ NestJS (apps/api)  /api/*  + OpenAPI docs at /api/docs
 pnpm-workspace.yaml, turbo.json, docker-compose.yml (Postgres on host port 5433, to avoid a local Postgres on 5432), package.json (scripts call turbo)
 packages/shared/                      # zod Configuration schema, DTO types, error shape
 apps/api/                             # NestJS
-  prisma/schema.prisma, prisma/seed.ts   # seeds the dataset + system default config
+  prisma/schema.prisma, prisma/seed.ts   # seeds the dataset, the system default, and a published sample by `demo`
   src/prisma/prisma.service.ts
   src/common/user-id.decorator.ts        # reads X-User-Id (auth extension point)
   src/common/http-exception.filter.ts    # { error: { code, message, details? } }
@@ -115,11 +115,11 @@ Visual design: https://claude.ai/artifact/3bZyDH2rkk2z7wD1MbRcF8 (desktop worksp
   - header: app name, dataset label, user chip
   - left sidebar (360px): config picker and card, tabs (Map style | Columns), footer with the unsaved-changes indicator, Reset, and Save as…
   - map: fills the remaining space, legend bottom-left
-  - attribute table: resizable drawer at the bottom
+  - attribute table: fixed-height panel under the map (35vh). A resizable drawer is listed under Further improvements.
 - **Draft vs saved:** edits apply live as a draft. Saving always creates a new config ("Save as…"), because updating saved configs isn't required. Switching configs with unsaved edits asks to discard them first.
-- **Picker:** searchable combobox grouped Default / Mine / Published by others. Badges: Default, Private 🔒, Published 🌐.
+- **Picker:** a popover with a search box and links, grouped Default / Mine / Published by others (the default and your own published configs are left out of the last group). Badges: Default, Private 🔒, Published 🌐. Built from links rather than a cmdk combobox, so each item is a real `<Link prefetch={true}>`; keyboard users tab through them.
 - **Map style tab:** colour and size switches; for each, a numeric-field select and a stops list (value plus hex swatch, or value plus px); gradient and size preview; validated with the shared zod schema.
-- **Columns tab:** filter box; checklist (ticked = visible) sorted visible-first; reorder by drag (dnd-kit) and up/down buttons; Show all / Hide all.
+- **Columns tab:** filter box; checklist (ticked = visible) sorted visible-first; reorder with up/down buttons (keyboard-friendly; drag-and-drop with dnd-kit is listed under Further improvements); Show all / Hide all.
 - **Dialogs:**
   - Username: first visit or header chip. Browsing works without a name; saving requires one.
   - Save as…: name of 1–80 characters, optional "Publish now"
@@ -127,7 +127,7 @@ Visual design: https://claude.ai/artifact/3bZyDH2rkk2z7wD1MbRcF8 (desktop worksp
 - **Shared link:** a banner "Viewing X shared by Y". A private or missing config falls back to the default with a warning banner. The page responds 200, because the static shell is already sent; the REST API returns 404 in both cases.
 - **States:** default config loaded server-side; map skeleton while the layer loads; error toast with Retry; inline warning for unknown fields; saving disables the button.
 - **Responsive and accessibility:**
-  - under 768px, the sidebar becomes a slide-in panel and the table drawer starts collapsed
+  - under 768px, the same sidebar element slides in over the map (opened from a header button; no duplicated content) and closes when a configuration is selected. It doesn't watch the pathname, because that's URL data and would keep the layout out of the static shell. The legend starts collapsed, since ArcGIS shows an expanded one full-screen on small views.
   - reordering works from the keyboard; colours can be typed as hex; badges use an icon plus text
 
 ## Frontend rendering plan (Cache Components + Partial Prefetching)
@@ -157,7 +157,7 @@ app/not-found.tsx                 static
 ```
 **Pages render the config-specific sidebar section** (`ConfigPanel`: card, editors, footer) into the layout's `<aside>`. They pass the configuration as props, so the prerendered HTML shows real values rather than a skeleton waiting for client state. (An earlier draft used an invisible `ApplyConfig` that only wrote to the store. That would have left the editors empty in the static HTML, because the sidebar renders before the page in the tree.) On mount, `ConfigPanel` selects its configuration in the store, which the map in the layout reads. The picker stays in the layout, above `{children}`.
 
-**Client store** (`WorkspaceProvider`, React context plus `useSyncExternalStore`; no extra library):
+**Client store** (`WorkspaceProvider`, React context plus `useSyncExternalStore`; no extra library). Hydration reads the store's initial state (the server snapshot), so the HTML and the first client render match even when the username arrives before a page hydrates. The provider also shares the dataset's field list (read once by the layout) through context.
 
 | Field | Meaning |
 |---|---|
@@ -194,7 +194,7 @@ Rules that keep private data safe:
 Editor behaviour:
 - Every config type is editable as a draft; Save as always creates a new private copy owned by the editor.
 - Selecting a different configuration resets the draft; re-selecting the same one keeps it.
-- Map edits apply to the map live, debounced by about 150ms while typing stop values. Columns edits apply to the table live.
+- Map and Columns edits apply live. The map reads the draft through `useDeferredValue`, so typing stays responsive, and it only applies drafts that pass the schema: a half-finished edit (stops out of order) keeps the last valid style while the editor shows the error.
 - On an unprefetched first visit to `/c/[id]`, the page's Suspense fallback (`ConfigPanelSkeleton`) shows until the configuration streams in.
 
 **Columns editor:** renders all 56 fields; visible fields are ordered first.
@@ -203,7 +203,7 @@ Editor behaviour:
 - **Reads:** all backend reads happen on the Next.js server (BFF to NestJS) and arrive in the RSC payload: dataset, fields, default/published/mine lists, selected config. Prefetching and `updateTag` keep them fresh, so there's no SWR or React Query, and the browser never calls NestJS.
 - **Writes:** Server Actions (Save as, Publish, set username). Each calls NestJS on the server; they're form-style calls, not data fetching.
 - **Picker search:** filters the lists already on the page, on the client.
-- **Data that only the browser fetches** goes to ArcGIS, not to our backend: map features and basemap tiles through the ArcGIS SDK. The optional "field range" hint uses `layer.queryFeatures` with statistics on the already-loaded layer, run when the user picks a field.
+- **Data that only the browser fetches** goes to ArcGIS, not to our backend: map features and basemap tiles through the ArcGIS SDK. An optional "field range" hint could use `layer.queryFeatures` with statistics on the already-loaded layer (not built; listed under Further improvements).
 - **Not covered:** live updates when someone else publishes. New published configs show up on the next navigation or after the 5-minute stale time. This goes in Known limitations; polling or server-sent events are future work.
 
 **Cached reads** (`apps/web/src/lib/api`; each wraps a `fetch` to NestJS; all extract-and-pass, so no `use cache: private` is needed; the username is passed as an argument and sent as `X-User-Id`):
@@ -254,4 +254,4 @@ Editor behaviour:
   4. As bob, see it under Published and apply it
   5. As bob, open alice's private link: the default appears with the warning banner
 - `pnpm build`, with the API running: `/` and `/c/[id]` are marked partially prerendered
-- `pnpm --filter web build:e2e && pnpm --filter web test:instant`: `@next/playwright` `instant()` tests on a production build (setup in `apps/web/instant-nav.rig.md`). The direct visit to `/` must paint the header and default configuration instantly, and the cookie-dependent user chip must stream in.
+- `pnpm --filter web build:e2e && pnpm --filter web test:instant`: `@next/playwright` `instant()` tests on a production build (setup in `apps/web/instant-nav.rig.md`). The direct visit to `/` must paint the header and default configuration instantly, and the cookie-dependent user chip must stream in. From `/`, clicking a picker item must show `/c/[id]`'s configuration instantly (per-link prefetch; RED with a default `<Link>`). `e2e/save-publish.spec.ts` checks the write path: Save as, Publish, and another user seeing it, with the cached lists updated by `updateTag`.

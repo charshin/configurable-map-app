@@ -127,6 +127,30 @@ describe('Configurations API (e2e)', () => {
     );
   });
 
+  it('rejects a configuration with neither colour nor size', async () => {
+    const res = await save('alice', { name: 'x', config: { ...CONFIG, symbolConfig: {} } }).expect(400);
+    expect(res.body.error.details).toEqual([
+      { path: ['config', 'symbolConfig'], message: 'Turn on colour, size or both' },
+    ]);
+  });
+
+  it('rejects colour and size on the same field', async () => {
+    const color = {
+      field: 'Height',
+      stops: [
+        { value: 0, color: '#ffffff' },
+        { value: 100, color: '#00a83a' },
+      ],
+    };
+    const symbolConfig = { ...CONFIG.symbolConfig, color }; // size is also on Height
+
+    const res = await save('alice', { name: 'x', config: { ...CONFIG, symbolConfig } }).expect(400);
+    expect(res.body.error.details).toEqual([
+      { path: ['config', 'symbolConfig', 'color', 'field'], message: 'Already used for size' },
+      { path: ['config', 'symbolConfig', 'size', 'field'], message: 'Already used for colour' },
+    ]);
+  });
+
   it('rejects fields the dataset does not have', async () => {
     const res = await save('alice', {
       name: 'x',

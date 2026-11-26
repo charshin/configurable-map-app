@@ -1,5 +1,6 @@
 /**
- * Seeds the one dataset and its system default configuration.
+ * Seeds the one dataset, its system default configuration, and one published
+ * sample by a "demo" user, so the Published list isn't empty on a fresh start.
  * Idempotent: safe to run again; existing rows are updated in place.
  *
  * Run with `pnpm --filter api db:seed`.
@@ -24,6 +25,7 @@ const DATASET_ID = 'landscape-trees';
 
 /** Fixed id so the default has a stable share link and re-seeding updates it in place. */
 const DEFAULT_CONFIGURATION_ID = '019ab000-0000-7000-8000-000000000001';
+const SAMPLE_CONFIGURATION_ID = '019ab000-0000-7000-8000-000000000002';
 
 // Moved here from the starter app's App.tsx: the popup belongs to the dataset.
 const popupTemplate: PopupTemplateDto = popupTemplateSchema.parse({
@@ -62,6 +64,30 @@ const defaultConfig: Configuration = configurationSchema.parse({
   },
 });
 
+// A published sample: tree height as colour, crown width as size.
+const sampleConfig: Configuration = configurationSchema.parse({
+  symbolConfig: {
+    color: {
+      field: 'Height',
+      stops: [
+        { value: 5, color: '#fff3b0' },
+        { value: 40, color: '#e09f3e' },
+        { value: 90, color: '#9e2a2b' },
+      ],
+    },
+    size: {
+      field: 'Width_EW',
+      stops: [
+        { value: 0, size: 4 },
+        { value: 60, size: 22 },
+      ],
+    },
+  },
+  tableConfig: {
+    columns: ['Cmn_Name', 'Height', 'Width_EW', 'Width_NS', 'Condition'],
+  },
+});
+
 async function main() {
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error('DATABASE_URL is not set');
@@ -97,7 +123,23 @@ async function main() {
       update: configuration,
     });
 
-    console.log(`Seeded dataset "${DATASET_ID}" and its default configuration.`);
+    const sample = {
+      datasetId: DATASET_ID,
+      name: 'Tree height and crown width',
+      kind: 'CUSTOM' as const,
+      visibility: 'PUBLISHED' as const,
+      isDefault: false,
+      ownerId: 'demo',
+      schemaVersion: CONFIGURATION_SCHEMA_VERSION,
+      config: sampleConfig,
+    };
+    await prisma.configuration.upsert({
+      where: { id: SAMPLE_CONFIGURATION_ID },
+      create: { id: SAMPLE_CONFIGURATION_ID, ...sample, createdAt: now, publishedAt: now },
+      update: sample,
+    });
+
+    console.log(`Seeded dataset "${DATASET_ID}", its default configuration and a published sample.`);
   } finally {
     await prisma.$disconnect();
   }

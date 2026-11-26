@@ -14,7 +14,7 @@ test('initial load of /: header and default configuration are instant, the user 
     async () => {
       await page.goto('/');
       await expect(page.getByTestId('dataset-name')).toHaveText('Landscape Trees');
-      await expect(page.getByTestId('config-name')).toHaveText('Tree leaf area');
+      await expect(page.getByTestId('config-name').filter({ visible: true })).toHaveText('Tree leaf area');
       await expect(page.getByTestId('user-chip')).toHaveCount(0);
     },
     { baseURL },

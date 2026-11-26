@@ -16,7 +16,10 @@ const nextConfig: NextConfig = {
   partialPrefetching: true,
   turbopack: {
     rules: {
+      // Tailwind only processes our own CSS; package CSS (such as ArcGIS's
+      // theme) is used as shipped. ("foreign" = node_modules.)
       "*.css": {
+        condition: { not: "foreign" },
         loaders: ["@tailwindcss/turbopack"],
         as: "*.css",
       },

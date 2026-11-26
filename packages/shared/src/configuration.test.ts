@@ -37,11 +37,21 @@ describe('configurationSchema', () => {
     expect(configurationSchema.parse(sample)).toEqual(sample);
   });
 
-  it('accepts colour only, size only, or neither', () => {
+  it('accepts colour only or size only', () => {
     const { color, size } = sample.symbolConfig;
-    for (const symbolConfig of [{ color }, { size }, {}]) {
+    for (const symbolConfig of [{ color }, { size }]) {
       expect(configurationSchema.safeParse({ ...sample, symbolConfig }).success).toBe(true);
     }
+  });
+
+  it('rejects turning off both colour and size', () => {
+    expect(issuePaths({ ...sample, symbolConfig: {} })).toEqual(['symbolConfig']);
+  });
+
+  it('rejects colour and size on the same field', () => {
+    const { color, size } = sample.symbolConfig;
+    const symbolConfig = { color, size: { ...size!, field: color!.field } };
+    expect(issuePaths({ ...sample, symbolConfig })).toEqual(['symbolConfig.color.field', 'symbolConfig.size.field']);
   });
 
   it('rejects stop values that do not increase', () => {

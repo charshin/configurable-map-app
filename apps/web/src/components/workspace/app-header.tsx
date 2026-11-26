@@ -2,14 +2,24 @@ import { LayersIcon, MapPinIcon } from 'lucide-react';
 import Link from 'next/link';
 import { Separator } from '@/components/ui/separator';
 
-export function AppHeader({ datasetName, children }: { datasetName: string; children: React.ReactNode }) {
+export function AppHeader({
+  datasetName,
+  start,
+  children,
+}: {
+  datasetName: string;
+  /** Before the logo (the sidebar toggle on small screens). */
+  start?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
-    <header className="flex h-14 shrink-0 items-center gap-4 border-b bg-background px-4">
+    <header className="flex h-14 shrink-0 items-center gap-3 border-b bg-background px-4 sm:gap-4">
+      {start}
       <Link href="/" className="flex items-center gap-2.5 font-semibold">
         <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
           <MapPinIcon aria-hidden />
         </span>
-        Configurable Map
+        <span className="hidden sm:inline">Configurable Map</span>
       </Link>
       <Separator orientation="vertical" className="h-6 self-center" />
       <div className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground">

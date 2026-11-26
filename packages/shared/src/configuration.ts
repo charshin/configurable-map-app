@@ -62,10 +62,24 @@ export const sizeVariableSchema = z.object({
  * rotation) or a categorical colour mode would be added here as optional keys.
  */
 export const configurationSchema = z.object({
-  symbolConfig: z.object({
-    size: sizeVariableSchema.optional(),
-    color: colorVariableSchema.optional(),
-  }),
+  /**
+   * Colour, size or both: at least one, so points always show some data. When
+   * both are on they use different fields; one field shown twice adds nothing.
+   */
+  symbolConfig: z
+    .object({
+      size: sizeVariableSchema.optional(),
+      color: colorVariableSchema.optional(),
+    })
+    .refine((symbol) => symbol.size !== undefined || symbol.color !== undefined, {
+      message: 'Turn on colour, size or both',
+    })
+    .superRefine(({ color, size }, ctx) => {
+      if (!color || !size || color.field !== size.field) return;
+      // Reported on both fields, so each editor section can flag its own.
+      ctx.addIssue({ code: 'custom', message: 'Already used for size', path: ['color', 'field'] });
+      ctx.addIssue({ code: 'custom', message: 'Already used for colour', path: ['size', 'field'] });
+    }),
   tableConfig: z.object({
     /** Visible columns, in display order. Fields not listed are hidden. */
     columns: z

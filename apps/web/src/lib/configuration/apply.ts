@@ -43,12 +43,22 @@ export function applyConfiguration(
   // The layer starts hidden so it never shows in its default style.
   layer.visible = true;
 
-  if (table) {
-    // Columns appear in the configured order; fields not listed are hidden.
+  // Columns appear in the configured order; fields not listed are hidden.
+  // Skipped when the table already shows exactly that (for example right after
+  // the user reordered columns in the table), so the table keeps its column
+  // widths and sorting instead of being rebuilt.
+  if (table && visibleFieldColumns(table).join('\n') !== config.tableConfig.columns.join('\n')) {
     table.tableTemplate = new TableTemplate({
       columnTemplates: config.tableConfig.columns.map(
         (fieldName) => new FieldColumnTemplate({ fieldName, visible: true }),
       ),
     });
   }
+}
+
+/** The table's visible field columns, in display order, as field names. */
+export function visibleFieldColumns(table: HTMLArcgisFeatureTableElement): string[] {
+  return (table.visibleColumns ?? []).flatMap((column) =>
+    'fieldName' in column && typeof column.fieldName === 'string' ? [column.fieldName] : [],
+  );
 }

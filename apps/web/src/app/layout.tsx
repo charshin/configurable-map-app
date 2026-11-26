@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import './globals.css';
 
@@ -15,6 +16,7 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
     <html lang="en" className={`${inter.variable} antialiased`}>
       <body>
         <TooltipProvider>{children}</TooltipProvider>
+        <Toaster position="bottom-right" />
       </body>
     </html>
   );
