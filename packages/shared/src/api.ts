@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { Configuration } from './configuration.js';
+import { configurationSchema } from './configuration.js';
 
 /**
  * Header the web app (BFF) uses to tell the API who the user is.
@@ -24,67 +24,89 @@ export type ConfigurationKind = z.infer<typeof configurationKindSchema>;
 export type Visibility = z.infer<typeof visibilitySchema>;
 export type ConfigurationScope = z.infer<typeof configurationScopeSchema>;
 
-export interface PopupFieldInfo {
-  fieldName: string;
-  label: string;
-}
+// Response shapes. They're zod schemas rather than plain interfaces so the
+// API's OpenAPI document is generated from the same definitions the web app
+// compiles against. `.meta({ id })` names each one as an OpenAPI component.
 
-export interface PopupTemplateDto {
-  /** ArcGIS template string, e.g. "{Cmn_Name} (Tree {Tree_ID})". */
-  title: string;
-  fieldInfos: PopupFieldInfo[];
-}
+export const popupTemplateSchema = z
+  .object({
+    /** ArcGIS template string, e.g. "{Cmn_Name} (Tree {Tree_ID})". */
+    title: z.string(),
+    fieldInfos: z.array(z.object({ fieldName: z.string(), label: z.string() })),
+  })
+  .meta({ id: 'PopupTemplate' });
 
-export interface DatasetDto {
-  id: string;
-  name: string;
-  /** Feature layer URL: service URL plus layer index. */
-  layerUrl: string;
-  popupTemplate: PopupTemplateDto;
-}
+export const datasetSchema = z
+  .object({
+    id: z.string(),
+    name: z.string(),
+    /** Feature layer URL: service URL plus layer index. */
+    layerUrl: z.url(),
+    popupTemplate: popupTemplateSchema,
+  })
+  .meta({ id: 'Dataset' });
 
-export interface DatasetFieldDto {
-  name: string;
-  alias: string;
-  /** ArcGIS field type without the `esriFieldType` prefix, e.g. "Integer". */
-  type: string;
-  /** True for numeric types, which can drive colour and size. */
-  numeric: boolean;
-}
+export const datasetFieldSchema = z
+  .object({
+    name: z.string(),
+    alias: z.string(),
+    /** ArcGIS field type without the `esriFieldType` prefix, e.g. "Integer". */
+    type: z.string(),
+    /** True for numeric types, which can drive colour and size. */
+    numeric: z.boolean(),
+  })
+  .meta({ id: 'DatasetField' });
+
+const summaryShape = {
+  id: z.uuid(),
+  datasetId: z.string(),
+  name: z.string(),
+  kind: configurationKindSchema,
+  visibility: visibilitySchema,
+  isDefault: z.boolean(),
+  /** Username of the owner; null for system configurations. */
+  ownerId: z.string().nullable(),
+  createdAt: z.iso.datetime(),
+  publishedAt: z.iso.datetime().nullable(),
+};
 
 /** List item: everything except the configuration body. */
-export interface ConfigurationSummaryDto {
-  id: string;
-  datasetId: string;
-  name: string;
-  kind: ConfigurationKind;
-  visibility: Visibility;
-  isDefault: boolean;
-  /** Username of the owner; null for system configurations. */
-  ownerId: string | null;
-  createdAt: string;
-  publishedAt: string | null;
-}
+export const configurationSummarySchema = z.object(summaryShape).meta({ id: 'ConfigurationSummary' });
 
-export interface ConfigurationDto extends ConfigurationSummaryDto {
-  schemaVersion: number;
-  config: Configuration;
-  /** True when the caller owns this private configuration. */
-  canPublish: boolean;
-}
+export const configurationDtoSchema = z
+  .object({
+    ...summaryShape,
+    schemaVersion: z.int(),
+    config: configurationSchema,
+    /** True when the caller owns this private configuration. */
+    canPublish: z.boolean(),
+  })
+  .meta({ id: 'Configuration' });
 
-export type ApiErrorCode =
-  | 'VALIDATION_FAILED'
-  | 'UNAUTHENTICATED'
-  | 'FORBIDDEN'
-  | 'NOT_FOUND'
-  | 'INTERNAL';
+export const apiErrorCodeSchema = z.enum([
+  'VALIDATION_FAILED',
+  'UNAUTHENTICATED',
+  'FORBIDDEN',
+  'NOT_FOUND',
+  'UPSTREAM_UNAVAILABLE',
+  'INTERNAL',
+]);
 
 /** The single error shape every API error response uses. */
-export interface ApiErrorBody {
-  error: {
-    code: ApiErrorCode;
-    message: string;
-    details?: unknown;
-  };
-}
+export const apiErrorBodySchema = z
+  .object({
+    error: z.object({
+      code: apiErrorCodeSchema,
+      message: z.string(),
+      details: z.unknown().optional(),
+    }),
+  })
+  .meta({ id: 'ApiError' });
+
+export type PopupTemplateDto = z.infer<typeof popupTemplateSchema>;
+export type DatasetDto = z.infer<typeof datasetSchema>;
+export type DatasetFieldDto = z.infer<typeof datasetFieldSchema>;
+export type ConfigurationSummaryDto = z.infer<typeof configurationSummarySchema>;
+export type ConfigurationDto = z.infer<typeof configurationDtoSchema>;
+export type ApiErrorCode = z.infer<typeof apiErrorCodeSchema>;
+export type ApiErrorBody = z.infer<typeof apiErrorBodySchema>;

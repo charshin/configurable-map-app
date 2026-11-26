@@ -1,0 +1,71 @@
+generator client {
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"
+  previewFeatures = ["partialIndexes"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ConfigurationKind {
+  /// Shipped with the app (seeded); has no owner.
+  SYSTEM
+  /// Created by a user; owned by them.
+  CUSTOM
+}
+
+enum Visibility {
+  /// Only the owner can see it.
+  PRIVATE
+  /// Everyone can see it. System configurations are always published.
+  PUBLISHED
+}
+
+/// A point layer the app can display. One is seeded; more can be added
+/// without schema changes (see README, "Supporting more datasets").
+model Dataset {
+  /// Slug, e.g. "landscape-trees".
+  id             String          @id @db.VarChar(64)
+  name           String          @db.VarChar(120)
+  /// Feature layer URL: service URL plus layer index.
+  layerUrl       String          @map("layer_url")
+  /// Popup shown when a point is clicked. Belongs to the dataset, not to a
+  /// configuration, because the configuration schema covers only symbology
+  /// and table columns.
+  popupTemplate  Json            @map("popup_template")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  configurations Configuration[]
+
+  @@map("datasets")
+}
+
+/// A saved way of displaying a dataset. Immutable once created: the only
+/// change allowed is publishing (PRIVATE -> PUBLISHED). Updating or deleting
+/// is out of scope for this assignment.
+model Configuration {
+  id            String            @id @default(uuid(7)) @db.Uuid
+  datasetId     String            @map("dataset_id") @db.VarChar(64)
+  dataset       Dataset           @relation(fields: [datasetId], references: [id])
+  name          String            @db.VarChar(80)
+  /// Username of the owner. Null exactly when kind is SYSTEM (enforced by a
+  /// CHECK constraint in the migration).
+  ownerId       String?           @map("owner_id") @db.VarChar(40)
+  kind          ConfigurationKind
+  visibility    Visibility
+  /// The configuration loaded when the app starts. At most one per dataset.
+  isDefault     Boolean           @default(false) @map("is_default")
+  /// Version of the `config` JSON shape (CONFIGURATION_SCHEMA_VERSION).
+  schemaVersion Int               @map("schema_version")
+  /// The display settings, validated by the shared zod schema on write.
+  config        Json
+  createdAt     DateTime          @default(now()) @map("created_at")
+  publishedAt   DateTime?         @map("published_at")
+
+  @@unique([datasetId], where: { isDefault: true }, map: "configurations_one_default_per_dataset")
+  /// "Published" list, newest first.
+  @@index([datasetId, visibility, createdAt(sort: Desc)])
+  /// "Mine" list, newest first.
+  @@index([datasetId, ownerId, createdAt(sort: Desc)])
+  @@map("configurations")
+}

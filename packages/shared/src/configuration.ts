@@ -73,7 +73,7 @@ export const configurationSchema = z.object({
       .min(1, 'Show at least one column')
       .refine((columns) => new Set(columns).size === columns.length, 'Columns must be unique'),
   }),
-});
+}).meta({ id: 'ConfigurationSettings' });
 
 export type ColorStop = z.infer<typeof colorStopSchema>;
 export type SizeStop = z.infer<typeof sizeStopSchema>;
@@ -86,11 +86,14 @@ export const configurationNameSchema = z
   .max(80, 'Use at most 80 characters');
 
 /** Body of `POST /api/datasets/:datasetId/configurations`. */
-export const createConfigurationSchema = z.object({
-  name: configurationNameSchema,
-  config: configurationSchema,
-  publish: z.boolean().default(false),
-});
+export const createConfigurationSchema = z
+  .object({
+    name: configurationNameSchema,
+    config: configurationSchema,
+    /** Publish immediately instead of saving as private. */
+    publish: z.boolean().default(false),
+  })
+  .meta({ id: 'CreateConfiguration' });
 
 export type CreateConfigurationInput = z.input<typeof createConfigurationSchema>;
 

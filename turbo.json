@@ -2,45 +2,104 @@
   "$schema": "https://turborepo.com/schema.json",
   "tasks": {
     "build": {
-      "dependsOn": ["^build"],
-      "outputs": ["dist/**"]
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "dist/**"
+      ]
     },
     "api#build": {
-      "dependsOn": ["^build", "db:generate"],
-      "outputs": ["dist/**"],
-      "env": ["DATABASE_URL"]
+      "dependsOn": [
+        "^build",
+        "db:generate"
+      ],
+      "outputs": [
+        "dist/**"
+      ],
+      "env": [
+        "DATABASE_URL"
+      ]
     },
     "web#build": {
-      "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**"],
-      "env": ["API_URL"],
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        ".next/**",
+        "!.next/cache/**"
+      ],
+      "env": [
+        "API_URL"
+      ],
       "cache": false
     },
     "db:generate": {
       "cache": false
     },
     "dev": {
-      "dependsOn": ["^build"],
+      "dependsOn": [
+        "^build"
+      ],
       "persistent": true,
       "cache": false
     },
     "api#dev": {
-      "dependsOn": ["^build", "db:generate"],
+      "dependsOn": [
+        "^build",
+        "db:generate"
+      ],
       "persistent": true,
       "cache": false
     },
     "test": {
-      "dependsOn": ["^build"]
+      "dependsOn": [
+        "^build"
+      ]
     },
     "test:e2e": {
-      "dependsOn": ["^build"],
+      "dependsOn": [
+        "^build"
+      ],
       "cache": false
     },
     "lint": {
-      "dependsOn": ["^build"]
+      "dependsOn": [
+        "^build"
+      ]
     },
     "typecheck": {
-      "dependsOn": ["^build"]
+      "dependsOn": [
+        "^build"
+      ]
+    },
+    "api#typecheck": {
+      "dependsOn": [
+        "^build",
+        "db:generate"
+      ]
+    },
+    "api#lint": {
+      "dependsOn": [
+        "^build",
+        "db:generate"
+      ]
+    },
+    "api#test": {
+      "dependsOn": [
+        "^build",
+        "db:generate"
+      ]
+    },
+    "api#test:e2e": {
+      "dependsOn": [
+        "^build",
+        "db:generate"
+      ],
+      "cache": false,
+      "env": [
+        "DATABASE_URL"
+      ]
     }
   }
 }

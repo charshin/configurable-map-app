@@ -1,12 +1,14 @@
 import { NestFactory } from '@nestjs/core';
+import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module.js';
-
-const API_PREFIX = 'api';
+import { configureApp, setupOpenApi } from './app.setup.js';
+import type { Env } from './config/env.js';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  app.setGlobalPrefix(API_PREFIX);
-  // 4000 so it doesn't clash with the web app on 3000.
-  await app.listen(process.env.PORT ?? 4000);
+  const app = configureApp(await NestFactory.create(AppModule));
+  setupOpenApi(app);
+  app.enableShutdownHooks();
+  // 4000 by default so it doesn't clash with the web app on 3000.
+  await app.listen(app.get(ConfigService<Env, true>).get('PORT', { infer: true }));
 }
 await bootstrap();

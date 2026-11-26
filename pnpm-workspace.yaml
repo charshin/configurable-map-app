@@ -2,6 +2,12 @@ packages:
   - apps/*
   - packages/*
 
+# Packages allowed to run install scripts (pnpm blocks them by default).
+onlyBuiltDependencies:
+  - '@prisma/engines'
+  - esbuild
+  - prisma
+
 ignoredBuiltDependencies:
   - sharp
   - unrs-resolver

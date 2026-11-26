@@ -44,7 +44,7 @@ NestJS (apps/api)  /api/*  + OpenAPI docs at /api/docs
 
 ## Repo layout (target)
 ```
-pnpm-workspace.yaml, turbo.json, docker-compose.yml (Postgres), package.json (scripts call turbo)
+pnpm-workspace.yaml, turbo.json, docker-compose.yml (Postgres on host port 5433, to avoid a local Postgres on 5432), package.json (scripts call turbo)
 packages/shared/                      # zod Configuration schema, DTO types, error shape
 apps/api/                             # NestJS
   prisma/schema.prisma, prisma/seed.ts   # seeds the dataset + system default config
@@ -90,11 +90,12 @@ A partial unique index enforces one default per dataset.
 | GET | `/api/datasets/:datasetId` | name, layerUrl, popupTemplate |
 | GET | `/api/datasets/:datasetId/fields` | the layer's fields, fetched from `<layerUrl>?f=json` and cached in memory; used for editor options and field validation |
 | GET | `/api/datasets/:datasetId/configurations?scope=default\|published\|mine` | `mine` requires `X-User-Id` |
+| GET | `/api/datasets/:datasetId/configurations/default` | the full default configuration, used on startup (lists return summaries without the `config` body) |
 | GET | `/api/configurations/:id` | 404 unless the config is system, published, or owned by the `X-User-Id` caller |
 | POST | `/api/datasets/:datasetId/configurations` | body `{ name, config, publish? }`; zod-validated, including that field names exist; requires `X-User-Id`; 201 |
 | POST | `/api/configurations/:id/publish` | owner only, idempotent |
 
-Errors use one JSON shape: `{ error: { code, message, details? } }`. NestJS returns 400 for validation errors, 401 when `X-User-Id` is missing where it's required, 403 when a non-owner publishes, and 404 when a config is missing or private.
+Errors use one JSON shape: `{ error: { code, message, details? } }`. NestJS returns 400 for validation errors, 401 when `X-User-Id` is missing where it's required, 403 when someone publishes a published or system config they don't own, 404 when a config is missing or private (including a non-owner trying to publish it), and 502 (`UPSTREAM_UNAVAILABLE`) when ArcGIS can't be reached for the field list. Colour and size fields must also be numeric.
 
 ## Frontend behaviour and starter fixes
 - Load the default configuration on first start, or the one at `/c/<id>`
@@ -245,7 +246,7 @@ Editor behaviour:
 
 ## Verification
 - `pnpm --filter api test`: service rules (visibility, ownership, publish idempotency, field validation)
-- `pnpm --filter api test:e2e`: endpoints against a test database
+- `pnpm --filter api test:e2e`: endpoints against a separate `<db>_test` database, prepared without destructive steps (`migrate deploy`, the idempotent seed, per-test cleanup); ArcGIS is replaced with fixed fields so it runs offline
 - `/api/docs` renders the OpenAPI spec
 - Manual end-to-end with `docker compose up -d && pnpm --filter api prisma migrate dev && pnpm dev` (runs `turbo dev`):
   1. A fresh start loads the default
