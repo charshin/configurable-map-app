@@ -151,21 +151,20 @@ app/(workspace)/layout.tsx        persists across config switches, so the ArcGIS
     MapStyleEditor, ColumnsEditor client; dataset fields are cached props (static), values come from the store
     Footer (unsaved, Reset, Save as…)
   MapPanel (client, next/dynamic ssr:false inside a client file) + table drawer, reading the store's draft
-app/(workspace)/page.tsx          "/": <ApplyConfig config={cached getDefaultConfig()} />, fully static
-app/(workspace)/c/[id]/page.tsx   <Suspense fallback={<ApplyConfig pending />}><SelectedConfig params/></Suspense>
+app/(workspace)/page.tsx          "/": <ConfigPanel configuration={cached getDefaultConfiguration()} />, fully static
+app/(workspace)/c/[id]/page.tsx   <Suspense fallback={<ConfigPanelSkeleton />}><SelectedConfig params/></Suspense>
 app/not-found.tsx                 static
 ```
-`ApplyConfig` is a client component that renders nothing visible (or the shared-link banner). It hands the page's config to the store: it sets `base`, resets `draft`, and sets `status`.
+**Pages render the config-specific sidebar section** (`ConfigPanel`: card, editors, footer) into the layout's `<aside>`. They pass the configuration as props, so the prerendered HTML shows real values rather than a skeleton waiting for client state. (An earlier draft used an invisible `ApplyConfig` that only wrote to the store. That would have left the editors empty in the static HTML, because the sidebar renders before the page in the tree.) On mount, `ConfigPanel` selects its configuration in the store, which the map in the layout reads. The picker stays in the layout, above `{children}`.
 
 **Client store** (`WorkspaceProvider`, React context plus `useSyncExternalStore`; no extra library):
 
 | Field | Meaning |
 |---|---|
 | `username` | `undefined` while streaming, `null` when signed out, otherwise the name; written by `UserChipClient` |
-| `base` | the selected saved config: `{ id, name, kind, visibility, ownerName, canPublish, config }` |
+| `selected` | the selected saved configuration (`ConfigurationDto`) |
 | `draft` | the `Configuration` being edited |
-| `dirty` | `draft` differs from `base.config` |
-| `status` | `loading` or `ready` |
+| `dirty` (derived) | `draft` differs from `selected.config` |
 
 What reads `username`:
 - the Save as dialog shows its name field when the user is signed out
@@ -194,9 +193,9 @@ Rules that keep private data safe:
 
 Editor behaviour:
 - Every config type is editable as a draft; Save as always creates a new private copy owned by the editor.
-- `ApplyConfig` resets the draft whenever `base.id` changes.
+- Selecting a different configuration resets the draft; re-selecting the same one keeps it.
 - Map edits apply to the map live, debounced by about 150ms while typing stop values. Columns edits apply to the table live.
-- While `status` is `loading` (an unprefetched first visit to `/c/[id]`), both editors show the skeleton from the States screen.
+- On an unprefetched first visit to `/c/[id]`, the page's Suspense fallback (`ConfigPanelSkeleton`) shows until the configuration streams in.
 
 **Columns editor:** renders all 56 fields; visible fields are ordered first.
 
@@ -255,3 +254,4 @@ Editor behaviour:
   4. As bob, see it under Published and apply it
   5. As bob, open alice's private link: the default appears with the warning banner
 - `pnpm build`, with the API running: `/` and `/c/[id]` are marked partially prerendered
+- `pnpm --filter web build:e2e && pnpm --filter web test:instant`: `@next/playwright` `instant()` tests on a production build (setup in `apps/web/instant-nav.rig.md`). The direct visit to `/` must paint the header and default configuration instantly, and the cookie-dependent user chip must stream in.

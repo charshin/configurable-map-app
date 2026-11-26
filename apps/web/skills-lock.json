@@ -1,0 +1,33 @@
+{
+  "version": 2,
+  "skills": {
+    "next-cache-components-optimizer": {
+      "source": "vercel/next.js",
+      "commit": "4b97b5e49357077bdf2cd85f8c0660e6a1a3417c",
+      "sourceType": "github",
+      "skillPath": "skills/next-cache-components-optimizer/SKILL.md",
+      "computedHash": "97a5b125e85aff3ebe90626b887cf016f4de33c01b479a42758bd57fe233db4c"
+    },
+    "next-dev-loop": {
+      "source": "vercel/next.js",
+      "commit": "4b97b5e49357077bdf2cd85f8c0660e6a1a3417c",
+      "sourceType": "github",
+      "skillPath": "skills/next-dev-loop/SKILL.md",
+      "computedHash": "78ebafaabaa8fd170da34957943f5845436f66c04daf85a93fc759f38a50a4ca"
+    },
+    "next-partial-prefetching-optimizer": {
+      "source": "vercel/next.js",
+      "commit": "26b5790940b7187f5525763b3a0a10985d8fc4be",
+      "sourceType": "github",
+      "skillPath": "skills/next-partial-prefetching-optimizer/SKILL.md",
+      "computedHash": "c14905fe96b7cae2af2d359edbfa6f07cc1fae5ff94709ed58092834677dc24d"
+    },
+    "shadcn": {
+      "source": "shadcn-ui/ui",
+      "commit": "0e5b2e621a9ee4cf6a604bbe6c5c0d5b70561eb4",
+      "sourceType": "github",
+      "skillPath": "skills/shadcn/SKILL.md",
+      "computedHash": "388962d16c7a4f13aaeee0d8f128e50a87df8553d42ef7988c39c0e1c74a40e8"
+    }
+  }
+}
